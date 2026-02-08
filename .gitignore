@@ -1,0 +1,10 @@
+runners/
+*.log
+.env
+config.yaml
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.DS_Store

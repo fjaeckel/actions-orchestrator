@@ -1,0 +1,40 @@
+# actions-orchestrator configuration
+# Copy this file to config.yaml and fill in your values.
+
+# GitHub Personal Access Token (classic) with 'repo' scope
+# Or use GITHUB_PAT environment variable
+github_pat: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Runner version to download (leave empty for latest)
+runner_version: ""
+
+# Base directory where runner instances are created
+# Each repo gets a subdirectory: <runners_base>/<owner>-<repo>/
+runners_base: "./runners"
+
+# Labels applied to all runners (in addition to self-hosted, macOS/Linux, etc.)
+default_labels:
+  - "orchestrated"
+
+# Runner group (only for GitHub Enterprise / org runners — ignored for repo-level)
+runner_group: ""
+
+# Repositories to register runners for
+repositories:
+  - owner: "your-username"
+    repo: "repo-one"
+    labels: []          # additional labels for this runner
+    # Optional: override PAT per-repo
+    # pat: "ghp_..."
+
+  - owner: "your-username"
+    repo: "repo-two"
+    labels:
+      - "docker"
+
+# How often (seconds) to check runner health / restart crashed runners
+health_check_interval: 30
+
+# Logging
+log_level: "INFO"           # DEBUG, INFO, WARNING, ERROR
+log_file: "./orchestrator.log"
