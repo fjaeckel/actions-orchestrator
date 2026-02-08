@@ -64,19 +64,27 @@ class Orchestrator:
     # ── Lifecycle ───────────────────────────────────────────────────
 
     def setup(self) -> None:
-        """Full setup: download runner, provision all repos, configure them."""
+        """Full setup: download runner, provision all repos, configure them (force replace)."""
         self._verify_credentials()
         self._download_runner()
+        self._provision_and_configure(replace=True)
+        logger.info("Setup complete — %d runner(s) configured", len(self.runners))
 
+    def prepare(self) -> None:
+        """Ensure runners are provisioned and configured, but skip if already set up."""
+        self._verify_credentials()
+        self._download_runner()
+        self._provision_and_configure(replace=False)
+
+    def _provision_and_configure(self, *, replace: bool) -> None:
         self.config.runners_base.mkdir(parents=True, exist_ok=True)
+        self.runners.clear()
 
         for repo_cfg in self.config.repositories:
             runner = RunnerInstance(self.config, repo_cfg, TEMPLATE_DIR)
             runner.provision()
-            runner.configure(replace=True)
+            runner.configure(replace=replace)
             self.runners.append(runner)
-
-        logger.info("Setup complete — %d runner(s) configured", len(self.runners))
 
     def start_all(self) -> None:
         """Start all configured runners."""
@@ -84,7 +92,7 @@ class Orchestrator:
             try:
                 if runner.state == RunnerState.UNINITIALIZED:
                     runner.provision()
-                    runner.configure(replace=True)
+                    runner.configure(replace=False)
                 runner.start()
             except Exception:
                 logger.exception("Failed to start runner for %s", runner.repo.full_name)
@@ -169,7 +177,7 @@ class Orchestrator:
         )
         logger.info("=" * 60)
 
-        self.setup()
+        self.prepare()
         self.start_all()
         self._start_health_monitor()
 

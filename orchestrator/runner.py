@@ -90,10 +90,30 @@ class RunnerInstance:
 
         # If already configured and not replacing, skip
         credentials = self.runner_dir / ".credentials"
+        runner_file = self.runner_dir / ".runner"
         if credentials.exists() and not replace:
             logger.info("[%s] Runner already configured, skipping", self.repo.full_name)
             self.state = RunnerState.CONFIGURED
             return
+
+        # If already configured locally and we want to replace, remove first
+        if replace and (credentials.exists() or runner_file.exists()):
+            logger.info("[%s] Removing existing local configuration before reconfigure", self.repo.full_name)
+            pat = self.config.pat_for(self.repo)
+            try:
+                removal_token = get_removal_token(self.repo.owner, self.repo.repo, pat)
+                result = subprocess.run(
+                    ["./config.sh", "remove", "--token", removal_token],
+                    cwd=self.runner_dir,
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                )
+                if result.returncode != 0:
+                    logger.warning("[%s] config.sh remove failed (may be stale): %s",
+                                   self.repo.full_name, result.stderr.strip())
+            except Exception as exc:
+                logger.warning("[%s] Could not remove old config cleanly: %s", self.repo.full_name, exc)
 
         pat = self.config.pat_for(self.repo)
         reg_token = get_registration_token(self.repo.owner, self.repo.repo, pat)
