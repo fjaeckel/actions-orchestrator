@@ -35,8 +35,8 @@ class RunnerInstance:
     def __init__(self, config: Config, repo: RepoConfig, template_dir: Path):
         self.config = config
         self.repo = repo
-        self.template_dir = template_dir
-        self.runner_dir = config.runners_base / repo.dir_name
+        self.template_dir = template_dir.resolve()
+        self.runner_dir = (config.runners_base / repo.dir_name).resolve()
         self.state = RunnerState.UNINITIALIZED
         self._process: Optional[subprocess.Popen] = None
         self._runner_name = f"{platform.node()}-{repo.dir_name}"
@@ -104,7 +104,7 @@ class RunnerInstance:
         url = f"https://github.com/{self.repo.owner}/{self.repo.repo}"
 
         cmd = [
-            str(self.runner_dir / "config.sh"),
+            "./config.sh",
             "--url", url,
             "--token", reg_token,
             "--name", self._runner_name,
@@ -158,7 +158,7 @@ class RunnerInstance:
         logger.info("[%s] Starting runner (log → %s)", self.repo.full_name, log_path)
 
         self._process = subprocess.Popen(
-            [str(run_sh)],
+            ["./run.sh"],
             cwd=self.runner_dir,
             stdout=log_file,
             stderr=subprocess.STDOUT,
@@ -216,7 +216,7 @@ class RunnerInstance:
             return
 
         cmd = [
-            str(self.runner_dir / "config.sh"),
+            "./config.sh",
             "remove",
             "--token", removal_token,
         ]

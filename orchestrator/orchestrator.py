@@ -19,7 +19,8 @@ from .runner import RunnerInstance, RunnerState
 
 logger = logging.getLogger(__name__)
 
-TEMPLATE_DIR = Path("_runner_template")
+# Resolve relative to the project root (parent of orchestrator/ package)
+TEMPLATE_DIR = (Path(__file__).resolve().parent.parent / "_runner_template")
 
 
 class Orchestrator:
