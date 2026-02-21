@@ -1,5 +1,7 @@
 # actions-orchestrator
 
+[![Lint](https://github.com/fjaeckel/actions-orchestrator/actions/workflows/lint.yml/badge.svg)](https://github.com/fjaeckel/actions-orchestrator/actions/workflows/lint.yml)
+
 Run multiple GitHub Actions self-hosted runners on a single machine — one runner per repository. Designed for private GitHub accounts where runners can't be shared across repos.
 
 ## How it works
