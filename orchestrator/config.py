@@ -4,11 +4,10 @@ Configuration loader — reads config.yaml + .env overrides.
 
 from __future__ import annotations
 
-import os
 import logging
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import yaml
 from dotenv import load_dotenv
@@ -23,7 +22,7 @@ class RepoConfig:
     owner: str
     repo: str
     labels: list[str] = field(default_factory=list)
-    pat: Optional[str] = None  # per-repo override
+    pat: str | None = None  # per-repo override
 
     @property
     def full_name(self) -> str:
@@ -55,8 +54,7 @@ def load_config(path: str | Path = "config.yaml") -> Config:
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(
-            f"Config file not found: {path}\n"
-            "Copy config.yaml.example to config.yaml and fill in your values."
+            f"Config file not found: {path}\nCopy config.yaml.example to config.yaml and fill in your values."
         )
 
     with open(path) as f:
@@ -78,9 +76,7 @@ def load_config(path: str | Path = "config.yaml") -> Config:
     ]
 
     if not pat:
-        raise ValueError(
-            "No GitHub PAT configured. Set GITHUB_PAT env var or github_pat in config.yaml"
-        )
+        raise ValueError("No GitHub PAT configured. Set GITHUB_PAT env var or github_pat in config.yaml")
 
     if not repos:
         raise ValueError("No repositories configured in config.yaml")

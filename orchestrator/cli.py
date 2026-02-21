@@ -5,10 +5,8 @@ CLI entry point for the actions-orchestrator.
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import sys
-from pathlib import Path
 
 from .config import load_config
 from .orchestrator import Orchestrator
@@ -22,8 +20,9 @@ def setup_logging(level: str, log_file: str | None = None) -> None:
     if log_file:
         handlers.append(logging.FileHandler(log_file))
 
-    logging.basicConfig(level=getattr(logging, level.upper(), logging.INFO),
-                        format=fmt, datefmt=datefmt, handlers=handlers)
+    logging.basicConfig(
+        level=getattr(logging, level.upper(), logging.INFO), format=fmt, datefmt=datefmt, handlers=handlers
+    )
 
 
 def cmd_start(args: argparse.Namespace) -> None:
@@ -49,8 +48,9 @@ def cmd_stop(args: argparse.Namespace) -> None:
     setup_logging(config.log_level, config.log_file)
     orch = Orchestrator(config)
     # Re-hydrate runner instances from existing directories
-    from .runner import RunnerInstance
     from .orchestrator import TEMPLATE_DIR
+    from .runner import RunnerInstance
+
     for repo_cfg in config.repositories:
         runner = RunnerInstance(config, repo_cfg, TEMPLATE_DIR)
         orch.runners.append(runner)
@@ -63,8 +63,9 @@ def cmd_unregister(args: argparse.Namespace) -> None:
     config = load_config(args.config)
     setup_logging(config.log_level, config.log_file)
     orch = Orchestrator(config)
-    from .runner import RunnerInstance
     from .orchestrator import TEMPLATE_DIR
+    from .runner import RunnerInstance
+
     for repo_cfg in config.repositories:
         runner = RunnerInstance(config, repo_cfg, TEMPLATE_DIR)
         orch.runners.append(runner)
@@ -77,8 +78,9 @@ def cmd_destroy(args: argparse.Namespace) -> None:
     config = load_config(args.config)
     setup_logging(config.log_level, config.log_file)
     orch = Orchestrator(config)
-    from .runner import RunnerInstance
     from .orchestrator import TEMPLATE_DIR
+    from .runner import RunnerInstance
+
     for repo_cfg in config.repositories:
         runner = RunnerInstance(config, repo_cfg, TEMPLATE_DIR)
         orch.runners.append(runner)
@@ -102,7 +104,8 @@ def cmd_status(args: argparse.Namespace) -> None:
             for r in runners:
                 status = r.get("status", "unknown")
                 name = r.get("name", "?")
-                labels = ", ".join(l["name"] for l in r.get("labels", []))
+                label_list: list[dict[str, object]] = r.get("labels", [])  # type: ignore[assignment]
+                labels = ", ".join(str(lbl["name"]) for lbl in label_list)
                 print(f"  {repo_cfg.full_name:<38} {name:<20} {status:<10} [{labels}]")
             if not runners:
                 print(f"  {repo_cfg.full_name:<38} (no runners registered)")
@@ -116,7 +119,8 @@ def main() -> None:
         description="Manage multiple GitHub Actions self-hosted runners on one machine.",
     )
     parser.add_argument(
-        "-c", "--config",
+        "-c",
+        "--config",
         default="config.yaml",
         help="Path to config file (default: config.yaml)",
     )

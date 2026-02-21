@@ -5,7 +5,6 @@ GitHub API helpers — registration token management.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 
 import requests
 
@@ -40,7 +39,7 @@ def get_registration_token(owner: str, repo: str, pat: str) -> str:
         raise GitHubAPIError(resp.status_code, resp.text)
 
     data = resp.json()
-    token = data["token"]
+    token: str = data["token"]
     expires = data.get("expires_at", "unknown")
     logger.info("Registration token for %s/%s expires at %s", owner, repo, expires)
     return token
@@ -56,10 +55,11 @@ def get_removal_token(owner: str, repo: str, pat: str) -> str:
     if resp.status_code != 201:
         raise GitHubAPIError(resp.status_code, resp.text)
 
-    return resp.json()["token"]
+    removal_token: str = resp.json()["token"]
+    return removal_token
 
 
-def list_runners(owner: str, repo: str, pat: str) -> list[dict]:
+def list_runners(owner: str, repo: str, pat: str) -> list[dict[str, object]]:
     """List all self-hosted runners registered for a repository."""
     url = f"{GITHUB_API}/repos/{owner}/{repo}/actions/runners"
     resp = requests.get(url, headers=_headers(pat), timeout=30)
@@ -67,12 +67,14 @@ def list_runners(owner: str, repo: str, pat: str) -> list[dict]:
     if resp.status_code != 200:
         raise GitHubAPIError(resp.status_code, resp.text)
 
-    return resp.json().get("runners", [])
+    runners: list[dict[str, object]] = resp.json().get("runners", [])
+    return runners
 
 
-def verify_pat(pat: str) -> dict:
+def verify_pat(pat: str) -> dict[str, object]:
     """Verify the PAT is valid and return the authenticated user info."""
     resp = requests.get(f"{GITHUB_API}/user", headers=_headers(pat), timeout=15)
     if resp.status_code != 200:
         raise GitHubAPIError(resp.status_code, "PAT verification failed")
-    return resp.json()
+    result: dict[str, object] = resp.json()
+    return result

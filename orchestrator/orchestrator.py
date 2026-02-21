@@ -7,20 +7,17 @@ from __future__ import annotations
 import logging
 import signal
 import subprocess
-import sys
 import threading
-import time
 from pathlib import Path
-from typing import Optional
 
-from .config import Config, load_config
+from .config import Config
 from .github_api import verify_pat
 from .runner import RunnerInstance, RunnerState
 
 logger = logging.getLogger(__name__)
 
 # Resolve relative to the project root (parent of orchestrator/ package)
-TEMPLATE_DIR = (Path(__file__).resolve().parent.parent / "_runner_template")
+TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "_runner_template"
 
 
 class Orchestrator:
@@ -37,7 +34,7 @@ class Orchestrator:
         self.config = config
         self.runners: list[RunnerInstance] = []
         self._shutdown_event = threading.Event()
-        self._health_thread: Optional[threading.Thread] = None
+        self._health_thread: threading.Thread | None = None
 
     # ── Bootstrap ───────────────────────────────────────────────────
 
@@ -145,15 +142,13 @@ class Orchestrator:
             self._shutdown_event.wait(self.config.health_check_interval)
 
     def _start_health_monitor(self) -> None:
-        self._health_thread = threading.Thread(
-            target=self._health_loop, daemon=True, name="health-monitor"
-        )
+        self._health_thread = threading.Thread(target=self._health_loop, daemon=True, name="health-monitor")
         self._health_thread.start()
 
     # ── Signal handling ─────────────────────────────────────────────
 
     def _install_signal_handlers(self) -> None:
-        def handler(signum, frame):
+        def handler(signum: int, frame: object) -> None:
             sig_name = signal.Signals(signum).name
             logger.info("Received %s — shutting down gracefully", sig_name)
             self._shutdown_event.set()
@@ -172,9 +167,7 @@ class Orchestrator:
 
         logger.info("=" * 60)
         logger.info("Actions Orchestrator starting")
-        logger.info(
-            "Managing %d repository runner(s)", len(self.config.repositories)
-        )
+        logger.info("Managing %d repository runner(s)", len(self.config.repositories))
         logger.info("=" * 60)
 
         self.prepare()
@@ -195,10 +188,12 @@ class Orchestrator:
         """Return a summary of all runners."""
         results = []
         for r in self.runners:
-            results.append({
-                "repo": r.repo.full_name,
-                "state": r.state.name,
-                "pid": r.pid,
-                "runner_dir": str(r.runner_dir),
-            })
+            results.append(
+                {
+                    "repo": r.repo.full_name,
+                    "state": r.state.name,
+                    "pid": r.pid,
+                    "runner_dir": str(r.runner_dir),
+                }
+            )
         return results

@@ -4,6 +4,7 @@ RunnerInstance — manages a single GitHub Actions runner process for one reposi
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import platform
@@ -13,7 +14,6 @@ import subprocess
 import time
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional
 
 from .config import Config, RepoConfig
 from .github_api import get_registration_token, get_removal_token
@@ -38,7 +38,7 @@ class RunnerInstance:
         self.template_dir = template_dir.resolve()
         self.runner_dir = (config.runners_base / repo.dir_name).resolve()
         self.state = RunnerState.UNINITIALIZED
-        self._process: Optional[subprocess.Popen] = None
+        self._process: subprocess.Popen | None = None
         self._runner_name = f"{platform.node()}-{repo.dir_name}"
 
     # ── Properties ──────────────────────────────────────────────────
@@ -48,11 +48,11 @@ class RunnerInstance:
         return self._process is not None and self._process.poll() is None
 
     @property
-    def pid(self) -> Optional[int]:
+    def pid(self) -> int | None:
         return self._process.pid if self._process else None
 
     @property
-    def exit_code(self) -> Optional[int]:
+    def exit_code(self) -> int | None:
         if self._process is None:
             return None
         return self._process.poll()
@@ -84,9 +84,7 @@ class RunnerInstance:
         Obtains a registration token via the GitHub API.
         """
         if not (self.runner_dir / "config.sh").exists():
-            raise FileNotFoundError(
-                f"Runner not provisioned at {self.runner_dir}. Call provision() first."
-            )
+            raise FileNotFoundError(f"Runner not provisioned at {self.runner_dir}. Call provision() first.")
 
         # If already configured and not replacing, skip
         credentials = self.runner_dir / ".credentials"
@@ -110,8 +108,9 @@ class RunnerInstance:
                     timeout=60,
                 )
                 if result.returncode != 0:
-                    logger.warning("[%s] config.sh remove failed (may be stale): %s",
-                                   self.repo.full_name, result.stderr.strip())
+                    logger.warning(
+                        "[%s] config.sh remove failed (may be stale): %s", self.repo.full_name, result.stderr.strip()
+                    )
             except Exception as exc:
                 logger.warning("[%s] Could not remove old config cleanly: %s", self.repo.full_name, exc)
 
@@ -125,10 +124,14 @@ class RunnerInstance:
 
         cmd = [
             "./config.sh",
-            "--url", url,
-            "--token", reg_token,
-            "--name", self._runner_name,
-            "--work", "_work",
+            "--url",
+            url,
+            "--token",
+            reg_token,
+            "--name",
+            self._runner_name,
+            "--work",
+            "_work",
             "--unattended",
         ]
 
@@ -152,8 +155,9 @@ class RunnerInstance:
         )
 
         if result.returncode != 0:
-            logger.error("[%s] config.sh failed:\nstdout: %s\nstderr: %s",
-                         self.repo.full_name, result.stdout, result.stderr)
+            logger.error(
+                "[%s] config.sh failed:\nstdout: %s\nstderr: %s", self.repo.full_name, result.stdout, result.stderr
+            )
             self.state = RunnerState.ERROR
             raise RuntimeError(f"Runner configuration failed for {self.repo.full_name}")
 
@@ -173,14 +177,14 @@ class RunnerInstance:
             raise FileNotFoundError(f"run.sh not found in {self.runner_dir}")
 
         log_path = self.runner_dir / "runner.log"
-        log_file = open(log_path, "a")
+        self._log_file = open(log_path, "a")  # noqa: SIM115
 
         logger.info("[%s] Starting runner (log → %s)", self.repo.full_name, log_path)
 
         self._process = subprocess.Popen(
             ["./run.sh"],
             cwd=self.runner_dir,
-            stdout=log_file,
+            stdout=self._log_file,
             stderr=subprocess.STDOUT,
             start_new_session=True,  # detach from our process group
         )
@@ -196,6 +200,7 @@ class RunnerInstance:
             return
 
         logger.info("[%s] Sending SIGINT to runner (pid %s)", self.repo.full_name, self.pid)
+        assert self._process is not None
         try:
             os.killpg(os.getpgid(self._process.pid), signal.SIGINT)
         except ProcessLookupError:
@@ -207,10 +212,8 @@ class RunnerInstance:
             logger.info("[%s] Runner stopped gracefully", self.repo.full_name)
         except subprocess.TimeoutExpired:
             logger.warning("[%s] Runner did not stop in %ds, sending SIGKILL", self.repo.full_name, timeout)
-            try:
+            with contextlib.suppress(ProcessLookupError):
                 os.killpg(os.getpgid(self._process.pid), signal.SIGKILL)
-            except ProcessLookupError:
-                pass
             self._process.wait(timeout=10)
 
         self.state = RunnerState.STOPPED
@@ -238,7 +241,8 @@ class RunnerInstance:
         cmd = [
             "./config.sh",
             "remove",
-            "--token", removal_token,
+            "--token",
+            removal_token,
         ]
 
         logger.info("[%s] Unregistering runner", self.repo.full_name)
@@ -268,7 +272,4 @@ class RunnerInstance:
         return True
 
     def __repr__(self) -> str:
-        return (
-            f"RunnerInstance(repo={self.repo.full_name!r}, "
-            f"state={self.state.name}, pid={self.pid})"
-        )
+        return f"RunnerInstance(repo={self.repo.full_name!r}, state={self.state.name}, pid={self.pid})"
