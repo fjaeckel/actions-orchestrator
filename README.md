@@ -10,11 +10,11 @@ Run multiple GitHub Actions self-hosted runners on a single machine — one runn
 ┌─────────────────────────────────────────────────────────────┐
 │  Orchestrator                                               │
 │                                                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
 │  │ Runner #1    │  │ Runner #2    │  │ Runner #3    │ ...   │
-│  │ owner/repo-a │  │ owner/repo-b │  │ owner/repo-c │      │
-│  │ (pid 1234)   │  │ (pid 1235)   │  │ (pid 1236)   │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
+│  │ owner/repo-a │  │ owner/repo-b │  │ owner/repo-c │       │
+│  │ (pid 1234)   │  │ (pid 1235)   │  │ (pid 1236)   │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
 │                                                             │
 │  Health monitor thread — auto-restarts crashed runners      │
 └─────────────────────────────────────────────────────────────┘
