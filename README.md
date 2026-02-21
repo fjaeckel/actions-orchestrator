@@ -29,9 +29,9 @@ Each runner:
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/fjaeckel/actions-orchestrator.git
+git clone git@github.com:fjaeckel/actions-orchestrator.git
 cd actions-orchestrator
-python3 -m pip install -r requirements.txt
+make bootstrap
 ```
 
 ### 2. Configure
@@ -67,9 +67,6 @@ make setup
 
 # Start all runners + health monitor (foreground, Ctrl+C to stop):
 make start
-
-# Or use the CLI directly:
-python3 -m orchestrator start
 ```
 
 ## CLI commands
@@ -86,7 +83,7 @@ python3 -m orchestrator start
 All commands accept `-c <path>` to specify a config file (default: `config.yaml`).
 
 ```bash
-python3 -m orchestrator -c production.yaml start
+make start CONFIG=production.yaml
 ```
 
 ## Directory layout
