@@ -1,4 +1,4 @@
-.PHONY: help bootstrap install setup start stop status unregister destroy clean
+.PHONY: help bootstrap install setup start stop status unregister destroy clean lint
 
 VENV_DIR := .venv
 PYTHON := $(VENV_DIR)/bin/python3
@@ -46,3 +46,9 @@ destroy: $(VENV_DIR)/bin/activate ## Unregister + delete all runner directories
 
 clean: ## Remove runner template, logs, and venv
 	rm -rf _runner_template runners/ $(VENV_DIR) *.log
+
+lint: $(VENV_DIR)/bin/activate ## Run all linters (ruff + mypy)
+	$(PIP) install -q ruff mypy types-requests types-PyYAML
+	$(VENV_DIR)/bin/ruff check orchestrator/
+	$(VENV_DIR)/bin/ruff format --check orchestrator/
+	$(VENV_DIR)/bin/mypy orchestrator/
